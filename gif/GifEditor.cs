@@ -1,4 +1,4 @@
-﻿
+
 
 using halba.imageditor.bitmap;
 using System;
@@ -16,6 +16,7 @@ namespace halba.imageditor.gif
     public class GifEditor
     {
 
+        
 
         public static Image CreateFlashingGif(Bitmap base_image, int interval, float inactive_image_alfa)
         {
@@ -48,6 +49,44 @@ namespace halba.imageditor.gif
             return result;
         }
 
+
+        class ImageTime
+        {
+            public Bitmap Image { get; set; }
+            public int Interval { get; set; }
+        }
+
+
+        public static Image Resize(Bitmap image, int width, int height)
+        {
+            FrameDimension dimension = new FrameDimension(image.FrameDimensionsList[0]);
+            int count = image.GetFrameCount(dimension);
+
+            var imagens = new List<ImageTime>();
+            int ixp = 0;
+            int ix = 0;
+            while (ix < count)
+            {
+                var delay = BitConverter.ToInt32(image.GetPropertyItem(20736).Value, ixp) * 10;
+                image.SelectActiveFrame(dimension, ix);
+                Bitmap igif = (Bitmap)PrepareImageToGif(new Bitmap(image, width, height));
+                imagens.Add(new ImageTime() { Image = igif, Interval = delay });
+                ixp += 4;
+                ix++;
+            }
+
+            MemoryStream gif = new MemoryStream();
+            var encoder = new GifEncoder(gif);
+            ix = 0;
+            while (ix < count)
+            {
+                encoder.AddFrame(imagens[ix].Image, frameDelay: new TimeSpan(0, 0, 0, 0, imagens[ix].Interval));
+                ix++;
+            }
+
+            var result = new Bitmap(gif);
+            return result;
+        }
 
 
         //public static Image CreateGif(List<Bitmap> images, int interval, bool animate_forever)
